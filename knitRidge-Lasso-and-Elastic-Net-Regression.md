@@ -1,6 +1,3 @@
-# Ridge-Lasso-and-Elastic-Net-Regression
-FINDING THE NUMBER OF APPLICATIONS RECEIVED BY COLLEGES
-
 QUESTION 1. library needed
 
 ``` r
@@ -1850,4 +1847,3 @@ en.results = glmnet.ssmc(X,y,M=1000,alpha=0.010,lambda=bestlam.en)
 ```
 
     ## RMSEP = 13.02573   MAEP= 10.8625   MAPEP= 0.208016
-

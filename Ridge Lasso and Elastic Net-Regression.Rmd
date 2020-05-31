@@ -1,0 +1,859 @@
+---
+title: "Ridge-Lasso-and-Elastic-Net-Regression.git"
+author: "Masha"
+date: "5/30/2020"
+output:
+  md_document:
+    variant: markdown_github
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+QUESTION 1.
+library needed 
+```{r}
+library(ISLR)
+```
+
+```{r}
+#the dataset is in the library above
+College2 = data.frame(PctAccept=100*(College$Accept/College$Apps),College[,-c(2:3)])
+str(College2)
+```
+
+You will be using the data frame College2 for parts (a) – (h) of this problem with PctAccept as the response.
+
+a)	Split the data into a training set and a test set by forming the indices for the training and test sets.  Use p = .6667, i.e. use two-thirds of the data to train the models.
+```{r}
+set.seed(1)
+sam = sample(1:777,size=floor(.6667*777),replace=F) # spliting it into training and test set
+View(sam)
+```
+
+College2[sam , ] = training set
+College2[-sam,] = validation set
+b)	Fit an OLS model for number of applications using the training set, and report the mean RMSEP for the test set
+```{r}
+X = model.matrix(PctAccept~.,data=College2[sam, ]) [,-1]
+y = College2[sam, ]$PctAccept
+Xs = scale(X)
+College2.temp = data.frame(y, Xs)
+sam = sample(1:length(y),floor(.6667*length(y)),replace=F)
+```
+
+```{r}
+PA.ols = lm(y~Xs,data=College2.temp, subset = sam)
+summary(PA.ols)
+```
+
+```{r}
+ypred = predict(PA.ols, newdata = College2.temp[-sam])
+RMSEP.ols = sqrt(mean((y[-sam]-ypred)^2))
+RMSEP.ols
+```
+
+c)	Fit a sequence of ridge and lasso regression models on the training 
+The lambda sequence (grid) is formed to create the sequence of models. Create two plots showing the parameter shrinkage, one with the norm constraint on the x-axis and one with log lambda values on the x-axis
+```{r}
+library(glmnet)
+grid = 10^seq(10, -2, length= 200)
+#grid
+```
+
+RIDGE MODEL
+```{r}
+ridge.mod = glmnet(Xs,y,alpha=0,lambda=grid)
+summary(ridge.mod)
+```
+
+```{r}
+plot(ridge.mod) 
+```
+
+ RIDGE (x log)
+```{r}
+plot(ridge.mod,xvar= "lambda")
+```
+
+RIDGE MODEL SUMMARY:
+When looking at the coefficients, the first graph has normal constraint and there is not good
+shrinkage. The second plot shows shrinkage going to 0 when lambda is in log for and there is
+better shrinkage from log lambda 7 – 25. That’s where I would expect my best lambda to be at.
+
+
+
+
+LASSO MODEL
+```{r}
+lasso.mod = glmnet(Xs,y,alpha=1,lambda=grid)
+summary(lasso.mod)
+```
+
+```{r}
+plot(lasso.mod)
+```
+
+
+LASSO (X log)
+```{r}
+plot(lasso.mod, xvar= "lambda")
+```
+
+LASSO SUMMARY:
+With an alpha of 1, Lasso model doesn’t do a good shrinkage job when its in the normal
+constraint but performs better when its in log lambda form. I would expect the best lambda to be
+between log lambda 2 – 25 because all the coefficients have been shrunk to 0 at log lambda 2.
+
+
+
+d)	Use cross-validation to determine the “optimal” values for the shrinkage parameter for both ridge and lasso and plot the results
+    for ridge
+```{r}
+cv.out = cv.glmnet(X,y,alpha=0)
+plot(cv.out)
+```
+
+```{r}
+bestlam = cv.out$lambda.min
+bestlam
+```
+
+using the best lamba 0.733 for ridge 
+for lasso
+```{r}
+cv.out = cv.glmnet(X,y,alpha=1)
+plot(cv.out)
+```
+
+```{r}
+bestlam2 = cv.out$lambda.min
+bestlam2
+```
+using the best lamba for lasso methodes 
+
+
+
+e)	Using the optimal lambda (bestlam) for both ridge and Lasso regression fit both models and compare the estimated coefficients for the OLS, ridge, and Lasso regressions. Discuss. 
+ ridge
+```{r}
+bestlam = cv.out$lambda.min
+ridge.best = glmnet(X[sam, ], y[sam], alpha = 0, lambda = bestlam)
+ridge.pred = predict(ridge.best, newx = X[-sam, ])
+rmse = sqrt(mean((ridge.pred- y[-sam])^2))
+rmse
+```
+
+for lasso
+```{r}
+bestlam2 = cv.out$lambda.min
+lasso.best = glmnet(X[sam, ], y[sam], alpha = 1, lambda = bestlam2)
+lasso.pred = predict(lasso.best, newx = X[-sam, ])
+rmse = sqrt(mean((lasso.pred- y[-sam])^2))
+rmse 
+```
+
+for all of them 
+```{r}
+cbind(coef(ridge.best), coef(lasso.best), coef(PA.ols))
+```
+
+SUMMARY:
+As you can see, the variables in the OLS model are higher than the Lasso and Ridge model.
+F.undergrad has been shrunk to 0 by the lasso model while the ridge model lowered it to -5.30
+Lasso has a slightly better RMSE of 11.5499 while Ridge has a RMSE of 11.5566.
+In general, Lasso model performed better than both the OLS and Ridge
+
+
+
+
+f)	Construct a plot of the predicted test y values vs. the actual y test values for both the ridge and Lasso regression models.  Discuss
+ridges
+```{r}
+plot(y[-sam],predict(ridge.best,newx=X[-sam,]),xlab= "Test y-values", ylab= "Predicted Test y-values")
+```
+
+for lasso
+```{r}
+plot(y[-sam],predict(lasso.best,newx=X[-sam,]),xlab= "Test y-values", ylab= "Predicted Test y-values")
+```
+
+SUMMARY:
+We can see improvement in both models because the constant variance is better than it was in the
+OLS model. Normality has also improved and there is less error in the residuals. 
+
+
+
+
+g)	Using the optimal lambda (bestlam) for both ridge and Lasso regression find the mean RMSEP for the test set.  How do the mean RMSEP compare for the OLS, ridge, and Lasso regression models? Discuss.
+  for OLS
+```{r}
+ypred = predict(PA.ols, newdata = College2.temp[-sam])
+RMSEP.ols = sqrt(mean((y[-sam]-ypred)^2))
+RMSEP.ols
+```
+
+
+RIDGE
+```{r}
+bestlam = cv.out$lambda.min
+ridge.best = glmnet(X[sam, ], y[sam], alpha = 0, lambda = bestlam)
+ridge.pred = predict(ridge.best, newx = X[-sam, ])
+RMSEP.Ridge = sqrt(mean((y[-sam]-ridge.pred)^2))
+RMSEP.Ridge
+```
+
+LASSO
+```{r}
+bestlam2 = cv.out$lambda.min
+lasso.best = glmnet(X[sam, ], y[sam], alpha = 1, lambda = bestlam2)
+lasso.pred = predict(lasso.best, newx = X[-sam, ])
+RMSEP.Lasso =sqrt(mean((y[-sam]-lasso.pred)^2))
+RMSEP.Lasso
+
+```
+
+SUMMARY:
+Lasso has the best RMSE and its mainly because of the shrinkage. The coefficients that were not
+useful were dropped out hence the better RMSE. Ridge performed better than OLS but that was to
+be expected since the initial OLS model had no shrinkage applied to it. 
+
+
+
+
+
+
+h)	Use Monte Carlo Split-Sample Cross-Validation to estimate the mean RMSEP for the OLS, Ridge, and Lasso regressions above.  Which model has best predictive performance?  
+```{r}
+#Monte Carlo Cross-Validation of OLS Regression Models
+MLR.ssmc = function(fit,p=.667,M=100) {
+  RMSEP = rep(0,M)
+  MAEP = rep(0,M)
+  MAPEP = rep(0,M)
+  y = fit$model[,1]
+  x = fit$model[,-1]
+  data = fit$model
+  n = nrow(data)
+  for (i in 1:M) {
+    ss = floor(n*p)
+    sam = sample(1:n,ss,replace=F)
+    fit2 = lm(formula(fit),data=data[sam,])
+    ypred = predict(fit2,newdata=x[-sam,])
+    RMSEP[i] = sqrt(mean((y[-sam]-ypred)^2))
+    MAEP[i] = mean(abs(y[-sam]-ypred))
+    yp = ypred[y[-sam]!=0]
+    ya = y[-sam][y[-sam]!=0]
+    MAPEP[i]=mean(abs(yp-ya)/ya)
+  
+  }
+  cat("RMSEP =",mean(RMSEP),"  MAEP=",mean(MAEP),"  MAPEP=",mean(MAPEP))
+  cv = return(data.frame(RMSEP=RMSEP,MAEP=MAEP,MAPEP=MAPEP))
+}
+```
+
+```{r}
+#Monte Carlo Cross-Validation of Ridge and Lasso Regression
+ glmnet.ssmc = function(X,y,p=.667,M=100,alpha=1,lambda=1) {
+  RMSEP = rep(0,M)
+  MAEP = rep(0,M)
+  MAPEP = rep(0,M)
+  n = nrow(X)
+  for (i in 1:M) {
+    ss = floor(n*p)
+    sam = sample(1:n,ss,replace=F)
+    fit = glmnet(X[sam,],y[sam],lambda=lambda,alpha=alpha)
+    ypred = predict(fit,newx=X[-sam,])
+    RMSEP[i] = sqrt(mean((y[-sam]-ypred)^2))
+    MAEP[i] = mean(abs(y[-sam]-ypred))
+    yp = ypred[y[-sam]!=0]
+    ya = y[-sam][y[-sam]!=0]
+    MAPEP[i]=mean(abs(yp-ya)/ya)
+  }
+  cat("RMSEP =",mean(RMSEP),"  MAEP=",mean(MAEP),"  MAPEP=",mean(MAPEP))
+  cv = return(data.frame(RMSEP=RMSEP,MAEP=MAEP,MAPEP=MAPEP)) 
+}
+
+```
+
+```{r}
+#Monte Carlo Cross-Validation of Ridge and Lasso Regression
+ glmnet.ssmc = function(X,y,p=.667,M=100,alpha=0,lambda=1) {
+  RMSEP = rep(0,M)
+  MAEP = rep(0,M)
+  MAPEP = rep(0,M)
+  n = nrow(X)
+  for (i in 1:M) {
+    ss = floor(n*p)
+    sam = sample(1:n,ss,replace=F)
+    fit = glmnet(X[sam,],y[sam],lambda=lambda,alpha=alpha)
+    ypred = predict(fit,newx=X[-sam,])
+    RMSEP[i] = sqrt(mean((y[-sam]-ypred)^2))
+    MAEP[i] = mean(abs(y[-sam]-ypred))
+    yp = ypred[y[-sam]!=0]
+    ya = y[-sam][y[-sam]!=0]
+    MAPEP[i]=mean(abs(yp-ya)/ya)
+  }
+  cat("RMSEP =",mean(RMSEP),"  MAEP=",mean(MAEP),"  MAPEP=",mean(MAPEP))
+  cv = return(data.frame(RMSEP=RMSEP,MAEP=MAEP,MAPEP=MAPEP)) 
+}
+
+```
+
+```{r}
+#reuslts for OLS
+X = scale(model.matrix(PctAccept~.,data=College2[sam, ])[,-1])
+y = College2[sam, ]$PctAccept
+Xs = scale(X)
+College2.temp = data.frame(y,Xs)
+sam = sample(1:length(y),floor(.6667*length(y)),replace=F)
+PA.ols = lm(y~Xs,data=College2.temp,subset=sam)
+plot(PA.ols)
+#cv.ols = cv.
+
+
+ypred = predict(PA.ols,newdata=College2.temp[-sam,])
+RMSEP.ols = sqrt(mean((y[-sam]-ypred)^2))
+RMSEP.ols
+MAEP = mean(abs(y[-sam]-ypred))
+MAEP
+yp = ypred[y[-sam]!=0]
+ya = y[-sam][y[-sam]!=0]
+MAPEP =mean(abs(yp-ya)/ya)
+MAPEP
+
+```
+
+
+```{r}
+#for ridge
+X = model.matrix(PctAccept~.,data=College2[sam, ])[,-1]
+y = College2[sam, ]$PctAccept
+PA.ridge = glmnet(X,y,alpha=0)
+plot(PA.ridge)
+cv.ridge = cv.glmnet(X,y,alpha=0)
+plot(cv.ridge)
+bestlam.ridge = cv.ridge$lambda.min
+
+ridge.results = glmnet.ssmc(X,y,M=1000,alpha=0,lambda=bestlam.ridge)
+
+```
+
+
+```{r}
+#for lasso
+X = scale(model.matrix(PctAccept~.,data=College2[sam, ])[,-1])
+y = College2[sam, ]$PctAccept
+PA.lasso = glmnet(X,y,alpha=1)
+plot(PA.lasso)
+cv.lasso = cv.glmnet(X,y,alpha=1)
+plot(cv.lasso)
+bestlam.lasso = cv.lasso$lambda.min
+
+lasso.results = glmnet.ssmc(X,y,M=1000,alpha=1,lambda=bestlam.lasso)
+
+```
+
+INSIGHT:
+My lasso model has the best predictive performance
+
+
+
+
+i)	Repeat (a) – (h) using the College4 data frame with logApps as the response.
+```{r}
+attach(College)
+
+College4 = data.frame(logApps=log(Apps),Private,logAcc=log(Accept),logEnr=log(Enroll),Top10perc,
+Top25perc,logFull=log(F.Undergrad),logPart=log(P.Undergrad),Outstate,Room.Board,Books,Personal,PhD,Terminal,S.F.Ratio,perc.alumni,logExp=log(Expend),Grad.Rate)
+
+detach(College)
+
+str(College4)
+
+set.seed(1)
+sam = sample(1:777,size=floor(.667*777),replace=F) # spliting it into training and test set
+View(sam)
+```
+
+i b)	Fit an OLS model for number of applications using the training set, and report the mean RMSEP for the test set
+```{r}
+X = model.matrix(logApps~.,data=College4[sam, ])[,-1]
+y = College4[sam, ]$logApps
+Xs = scale(X)
+College4.temp = data.frame(y, Xs)
+sam = sample(1:length(y),floor(.6667*length(y)),replace=F)
+```
+
+```{r}
+PA.ols4 = lm(y~Xs,data=College4.temp, subset = sam)
+summary(PA.ols4)
+```
+
+```{r}
+ypred = predict(PA.ols4, newdata = College4.temp[-sam])
+RMSEP.ols4 = sqrt(mean((y[-sam]-ypred)^2))
+RMSEP.ols4
+```
+
+#i. c)	Fit a sequence of ridge and lasso regression models on the training 
+#The lambda sequence (grid) is formed to create the sequence of models. Create two plots showing the parameter shrinkage, one #with the norm constraint on the x-axis and one with log lambda values on the x-axis
+
+```{r}
+library(glmnet)
+grid = 10^seq(10, -2, length= 200)
+#grid
+```
+
+ridge model
+```{r}
+ridge.mod4 = glmnet(Xs,y,alpha=0,lambda=grid)
+#summary(ridge.mod4)
+```
+
+```{r}
+plot(ridge.mod4) 
+```
+for ridge log 
+```{r}
+plot(ridge.mod4,xvar= "lambda")
+```
+
+SUMMARY:
+With the original data, L1 norm does not have any shrinkage but when looking at the log lambda,
+the optimal shrinkage starts from around 4 when all the coefficients have been shrunk to 0 and
+goes to 25.
+
+
+for lasso model
+```{r}
+lasso.mod4 = glmnet(Xs,y,alpha=1,lambda=grid)
+#summary(lasso.mod)
+```
+
+```{r}
+plot(lasso.mod4)
+```
+
+for lasso but x are log.
+```{r}
+plot(lasso.mod4, xvar= "lambda")
+```
+
+SUMMARY:
+The best lambda starts anywhere from 0- 25 since almost all of the coefficients have been shrunk
+to 0.
+
+
+
+i d)	Use cross-validation to determine the “optimal” values for the shrinkage parameter for both ridge and lasso and plot the results
+    for ridge
+```{r}
+cv.out4 = cv.glmnet(X,y,alpha=0)
+plot(cv.out4)
+
+bestlam4 = cv.out4$lambda.min
+bestlam4
+```
+
+
+for lasso
+```{r}
+cv.out4 = cv.glmnet(X,y,alpha=1)
+plot(cv.out4)
+
+bestlam4 = cv.out4$lambda.min
+bestlam4
+```
+using the best lamba for lasso methodes 
+
+
+
+i. e)	Using the optimal lambda (bestlam) for both ridge and Lasso regression fit both models and compare the estimated coefficients for the OLS, ridge, and Lasso regressions. Discuss. 
+ i). ridge
+```{r}
+bestlam4 = cv.out$lambda.min
+ridge.best4 = glmnet(X[sam, ], y[sam], alpha = 0, lambda = bestlam4)
+ridge.pred4 = predict(ridge.best4, newx = X[-sam, ])
+rmse = sqrt(mean((ridge.pred4- y[-sam])^2))
+rmse 
+```
+
+```{r}
+#cbind(coef(ridge.best4), coef(PA.ols4))
+```
+
+for lasso
+```{r}
+bestlam4 = cv.out$lambda.min
+lasso.best4 = glmnet(X[sam, ], y[sam], alpha = 1, lambda = bestlam4)
+lasso.pred4 = predict(lasso.best4, newx = X[-sam, ])
+rmse = sqrt(mean((lasso.pred4 - y[-sam])^2))
+rmse
+```
+
+```{r}
+#cbind(coef(lasso.best4), coef(PA.ols4))
+```
+
+for all of them 
+```{r}
+cbind(coef(ridge.best4), coef(lasso.best4), coef(PA.ols4))
+```
+
+SUMMARY:
+Lasso has shrunk mode of the coefficients to 0 and Ridge did some shrinkage but not as much as Lasso.
+This is to be expected since lasso shrinks coefficients more than ridge. The coefficients shrunk to 0 were
+terminal, outstate, logpart, privateyes, s.f ratio, perc.alu,im. Logexp and grad.rate
+
+
+
+ i. f)	Construct a plot of the predicted test y values vs. the actual y test values for both the ridge and Lasso regression models.  Discuss.  (4 pts.)
+
+```{r}
+plot(y[-sam],predict(ridge.best4,newx=X[-sam,]),xlab="Test y-values", ylab="Predicted Test y-values")
+```
+
+```{r}
+plot(y[-sam],predict(lasso.best4,newx=X[-sam,]),xlab="Test y-values", ylab="Predicted Test y-values")
+```
+
+SUMMARY:
+Both models have a good distribution of the actual and the predicted. There is constant variance and their
+R2 are higher than the original OLS model.
+
+
+
+
+
+i. g)	Using the optimal lambda (bestlam) for both ridge and Lasso regression find the mean RMSEP for the test set.  How do the mean RMSEP compare for the OLS, ridge, and Lasso regression models? Discuss.
+  for OLS
+```{r}
+ypred = predict(PA.ols4, newdata = College4.temp[-sam])
+RMSEP.ols4 = sqrt(mean((y[-sam]-ypred)^2))
+RMSEP.ols4
+```
+
+
+for ridge
+```{r}
+bestlam4 = cv.out4$lambda.min
+ridge.best4 = glmnet(X[sam, ], y[sam], alpha = 0, lambda = bestlam4)
+ridge.pred4 = predict(ridge.best4, newx = X[-sam, ])
+RMSEP.Ridge4 = sqrt(mean((y[-sam]-ridge.pred4)^2))
+RMSEP.Ridge4
+```
+
+for lasso
+```{r}
+bestlam4 = cv.out4$lambda.min
+lasso.best4 = glmnet(X[sam, ], y[sam], alpha = 1, lambda = bestlam4)
+lasso.pred4 = predict(lasso.best4, newx = X[-sam, ])
+RMSEP.Lasso4 =sqrt(mean((y[-sam]-lasso.pred4)^2))
+RMSEP.Lasso4
+
+```
+
+
+
+i.
+
+```{r}
+#reuslts for OLS
+X = scale(model.matrix(logApps~.,data=College4[sam, ])[,-1])
+y = College4[sam, ]$logApps
+Xs = scale(X)
+College4.temp = data.frame(y,Xs)
+sam = sample(1:length(y),floor(.6667*length(y)),replace=F)
+PA.ols4 = lm(y~Xs,data=College4.temp,subset=sam)
+plot(PA.ols4)
+#cv.ols = cv.
+
+
+ypred = predict(PA.ols4,newdata=College4.temp[-sam,])
+RMSEP.ols4 = sqrt(mean((y[-sam]-ypred)^2))
+RMSEP.ols4
+MAEP = mean(abs(y[-sam]-ypred))
+MAEP
+yp = ypred[y[-sam]!=0]
+ya = y[-sam][y[-sam]!=0]
+MAPEP =mean(abs(yp-ya)/ya)
+MAPEP
+
+```
+
+```{r}
+#for ridge
+X = model.matrix(logApps~.,data=College4[sam, ])[,-1]
+y = College4[sam, ]$logApps
+PA.ridge4 = glmnet(X,y,alpha=0)
+plot(PA.ridge4)
+cv.ridge4 = cv.glmnet(X,y,alpha=0)
+plot(cv.ridge4)
+bestlam.ridge4 = cv.ridge4$lambda.min
+
+ridge.results = glmnet.ssmc(X,y,M=1000,alpha=0,lambda=bestlam.ridge4)
+```
+
+```{r}
+#for lasso
+X = scale(model.matrix(logApps~.,data=College4[sam, ])[,-1])
+y = College4[sam, ]$logApps
+PA.lasso4 = glmnet(X,y,alpha=1)
+plot(PA.lasso4)
+cv.lasso4 = cv.glmnet(X,y,alpha=1)
+plot(cv.lasso4)
+bestlam.lasso4 = cv.lasso4$lambda.min
+
+lasso.results = glmnet.ssmc(X,y,M=1000,alpha=1,lambda=bestlam.lasso4)
+
+```
+SUMMARY:
+Ridge RMSEP performs better than the OLS model and the Lasso model.
+When it comes to predictive performance, Lasso did better than both the OLS model and Ridge model.
+
+
+
+QUESTION 2.
+
+```{r}
+Lu2004 = read.csv("C:/Users/fb8502oa/Desktop/Github stuff/Ridge-Lasso-and-Elastic-Net-Regression/Lu2004.csv")
+View(Lu2004)
+```
+
+```{r}
+str(Lu2004)
+```
+
+
+a)	Generate a sequence of ridge and Lasso regression models using the same grid values used in Problem 1.  Create two plots showing the coefficient shrinkage with different x-axes for both ridge and Lasso regressions as in part (c) for Problem 1. Briefly discuss these plots. 
+
+```{r}
+X = scale(model.matrix(Age~., Lu2004)[,-1])
+y = Lu2004[,1]
+
+library(glmnet)
+grid = 10^seq(10, -2, length= 200)
+#grid
+```
+
+
+RIDGE
+```{r}
+ridge.mod = glmnet(X,y,alpha=0,lambda=grid)
+#summary(ridge.mod)
+plot(ridge.mod)
+```
+
+```{r}
+plot(ridge.mod,xvar= "lambda")
+```
+SUMMARY:
+Using ridge, most of the coefficients are being shrunk to zero when Log lambda is between 8 to
+25
+
+
+LASSO
+```{r}
+lasso.mod = glmnet(X,y,alpha=1,lambda=grid)
+#summary(lasso.mod)
+plot(lasso.mod)
+```
+
+```{r}
+plot(lasso.mod,xvar= "lambda")
+```
+SUMMARY:
+Using Lasso, most of the coefficients are being shrunk to zero when Log lambda is between 3 to
+25.
+
+
+b)	Find the optimal for ridge and Lasso regression using the cv.glmnet function. Also show plots of the cross-validation results for both methods.  Discuss.  
+
+```{r}
+cv.out = cv.glmnet(X,y,alpha=0)
+plot(cv.out)
+
+bestlam1 = cv.out$lambda.min
+```
+ridge
+```{r}
+bestlam1
+```
+SUMMARY:
+The best log lambda is between 5.5 – 7.8. this gives the best lambda for the ridge model as 283.86
+
+
+for lasso
+```{r}
+cv.out = cv.glmnet(X,y,alpha=1)
+plot(cv.out)
+bestlam2 = cv.out$lambda.min
+```
+
+lasso
+```{r}
+bestlam2
+```
+SUMMARY:
+the best log lambda for the lasso model is between -2 to 0.02. this gives the best lambda as 0.196
+
+
+c. ) Fit the optimal ridge and Lasso regression models and construct plots of the predicted ages (y ̂) vs. actual age (y).  Also find the correlation between y & y ̂  and the correlation squared.  Note the correlation between y & y ̂ squared is the R-square for the model.  Which model predicts subject age better?  (5 pts.)
+```{r}
+bestlam1 = cv.out$lambda.min
+ridge.best1 = glmnet(X, y, alpha = 0, lambda = bestlam1)
+ridge.pred = predict(ridge.best1, newx =X)
+#cor(y, ridge.pred)
+
+RsqdPred = 1-  (sum((y-ridge.pred)^2) / sum((y-mean(y))^2))
+RsqdPred
+```
+
+```{r}
+bestlam2 = cv.out$lambda.min
+lasso.best2 = glmnet(X, y, alpha = 1, lambda = bestlam2)
+lasso.pred = predict(lasso.best2, X)
+
+
+RsqdPred = 1-  (sum((y-lasso.pred)^2) / sum((y-mean(y))^2))
+RsqdPred
+
+```
+
+```{r}
+plot(y,predict(ridge.best1,newx=X ),xlab= "actual age ", ylab= "Predicted Test age")
+
+```
+
+
+
+```{r}
+plot(y,predict(lasso.best2,newx=X ),xlab= "actual age ", ylab= "Predicted Test age")
+```
+SUMMARY:
+The lasso model has a rsqrd that’s slightly higher than the ridge. There is not big difference
+between them, but Lasso seems to be the best model
+
+
+
+
+d)	Using the better of the two models as determined from part (c), examine and interpret the estimated coefficients.  If the researchers ask you “which genes are most related or useful in determining the age of the subject?”, what would you tell them, i.e. give a list of specific genes to answer this question.
+```{r}
+cbind(coef(ridge.best1), coef(lasso.best2))
+# to see the important variables and how they have been shrunk 
+```
+
+e)	Use Monte Carlo cross-validation estimate the prediction accuracies for both ridge and Lasso regression for these data. (Use p = .75 and B = 1000.)  
+
+```{r}
+#Monte Carlo Cross-Validation of Ridge Regression
+glmnet.ssmc = function(X,y,p=.75,M=100,alpha=0,lambda=1) {
+  RMSEP = rep(0,M)
+  MAEP = rep(0,M)
+  MAPEP = rep(0,M)
+  n = nrow(X)
+  for (i in 1:M) {
+    ss = floor(n*p)
+    sam = sample(1:n,ss,replace=F)
+    fit = glmnet(X[sam,],y[sam],lambda=lambda,alpha=alpha)
+    ypred = predict(fit,newx=X[-sam,])
+    RMSEP[i] = sqrt(mean((y[-sam]-ypred)^2))
+    MAEP[i] = mean(abs(y[-sam]-ypred))
+    yp = ypred[y[-sam]!=0]
+    ya = y[-sam][y[-sam]!=0]
+    MAPEP[i]=mean(abs(yp-ya)/ya)
+  }
+  cat("RMSEP =",mean(RMSEP),"  MAEP=",mean(MAEP),"  MAPEP=",mean(MAPEP))
+  cv = return(data.frame(RMSEP=RMSEP,MAEP=MAEP,MAPEP=MAPEP)) 
+}
+```
+
+
+
+```{r}
+#Monte Carlo Cross-Validation of Ridge and Lasso Regression
+glmnet.ssmc = function(X,y,p=.75,M=100,alpha=1,lambda=1) {
+  RMSEP = rep(0,M)
+  MAEP = rep(0,M)
+  MAPEP = rep(0,M)
+  n = nrow(X)
+  for (i in 1:M) {
+    ss = floor(n*p)
+    sam = sample(1:n,ss,replace=F)
+    fit = glmnet(X[sam,],y[sam],lambda=lambda,alpha=alpha)
+    ypred = predict(fit,newx=X[-sam,])
+    RMSEP[i] = sqrt(mean((y[-sam]-ypred)^2))
+    MAEP[i] = mean(abs(y[-sam]-ypred))
+    yp = ypred[y[-sam]!=0]
+    ya = y[-sam][y[-sam]!=0]
+    MAPEP[i]=mean(abs(yp-ya)/ya)
+  }
+  cat("RMSEP =",mean(RMSEP),"  MAEP=",mean(MAEP),"  MAPEP=",mean(MAPEP))
+  cv = return(data.frame(RMSEP=RMSEP,MAEP=MAEP,MAPEP=MAPEP)) 
+}
+
+```
+
+
+```{r}
+ X = scale(model.matrix(Age~.,data=Lu2004)[,-1])
+ y = Lu2004$Age
+ Lu.ridge = glmnet(X,y,alpha=0)
+ plot(Lu.ridge)
+ cv.ridge = cv.glmnet(X,y,alpha=0)
+ plot(cv.ridge)
+ bestlam.ridge = cv.ridge$lambda.min
+
+ ridge.results = glmnet.ssmc(X,y,M=1000,alpha=0,lambda=bestlam.ridge)
+
+```
+
+```{r}
+Lu.lasso = glmnet(X,y,alpha=1)
+plot(Lu.lasso)
+cv.lasso = cv.glmnet(X,y,alpha=1)
+plot(cv.lasso)
+bestlam.lasso = cv.lasso$lambda.min
+
+lasso.results = glmnet.ssmc(X,y,M=1000,alpha=1,lambda=bestlam.lasso)
+
+```
+f)	BONUS:  Fit an Elastic Net to these data, fine tune it, and compare the predictive performance to ridge and LASSO.  (10 pts.)
+```{r}
+library(glmnet)
+library(elasticnet)
+```
+
+```{r}
+ #(α=0.50)
+Lu2004.en = glmnet(X,y,alpha=0.5)
+plot(Lu2004.en)
+cv.en = cv.glmnet(X,y,alpha=0.5)
+plot(cv.en)
+bestlam.en = cv.en$lambda.min
+en.results = glmnet.ssmc(X,y,M=1000,alpha=0.5,lambda=bestlam.en)
+```
+
+trial 2 with a alamba of 0.2
+```{r}
+ #(α=0.10)
+Lu2004.en = glmnet(X,y,alpha=0.015)
+plot(Lu2004.en)
+cv.en = cv.glmnet(X,y,alpha=0.015)
+plot(cv.en)
+bestlam.en = cv.en$lambda.min
+en.results = glmnet.ssmc(X,y,M=1000,alpha=0.015,lambda=bestlam.en)
+```
+
+```{r}
+ #(α=0.015)
+Lu2004.en = glmnet(X,y,alpha=0.010)
+plot(Lu2004.en)
+cv.en = cv.glmnet(X,y,alpha=0.010)
+plot(cv.en)
+bestlam.en = cv.en$lambda.min
+en.results = glmnet.ssmc(X,y,M=1000,alpha=0.010,lambda=bestlam.en)
+```
+
