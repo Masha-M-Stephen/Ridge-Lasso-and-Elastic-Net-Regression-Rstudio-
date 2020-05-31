@@ -1,0 +1,2 @@
+# Ridge-Lasso-and-Elastic-Net-Regression
+FINDING THE NUMBER OF APPLICATIONS RECEIVED BY COLLEGES
