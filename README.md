@@ -37,7 +37,7 @@ str(College2)
 You will be using the data frame College2 for parts (a) – (h) of this
 problem with PctAccept as the response.
 
-1.  Split the data into a training set and a test set by forming the
+A.  Split the data into a training set and a test set by forming the
     indices for the training and test sets. Use p = .6667, i.e. use
     two-thirds of the data to train the models.
 
@@ -47,7 +47,7 @@ sam = sample(1:777,size=floor(.6667*777),replace=F) # spliting it into training 
 View(sam)
 ```
 
-College2\[sam , \] = training set College2\[-sam,\] = validation set b)
+College2\[sam , \] = training set College2\[-sam,\] = validation set B)
 Fit an OLS model for number of applications using the training set, and
 report the mean RMSEP for the test set
 
@@ -112,7 +112,7 @@ RMSEP.ols
 
     ## [1] 17.77017
 
-1.  Fit a sequence of ridge and lasso regression models on the training
+C.  Fit a sequence of ridge and lasso regression models on the training
     The lambda sequence (grid) is formed to create the sequence of
     models. Create two plots showing the parameter shrinkage, one with
     the norm constraint on the x-axis and one with log lambda values on
@@ -218,7 +218,7 @@ its in log lambda form. I would expect the best lambda to be between log
 lambda 2 – 25 because all the coefficients have been shrunk to 0 at log
 lambda 2.
 
-1.  Use cross-validation to determine the “optimal” values for the
+D.  Use cross-validation to determine the “optimal” values for the
     shrinkage parameter for both ridge and lasso and plot the
     results for ridge
 
@@ -254,7 +254,7 @@ bestlam2
 
 using the best lamba for lasso methodes
 
-1.  Using the optimal lambda (bestlam) for both ridge and Lasso
+E.  Using the optimal lambda (bestlam) for both ridge and Lasso
     regression fit both models and compare the estimated coefficients
     for the OLS, ridge, and Lasso regressions. Discuss. ridge
 
@@ -312,7 +312,7 @@ model while the ridge model lowered it to -5.30 Lasso has a slightly
 better RMSE of 11.5499 while Ridge has a RMSE of 11.5566. In general,
 Lasso model performed better than both the OLS and Ridge
 
-1.  Construct a plot of the predicted test y values vs. the actual y
+F.  Construct a plot of the predicted test y values vs. the actual y
     test values for both the ridge and Lasso regression models. Discuss
     ridges
 
@@ -334,7 +334,7 @@ SUMMARY: We can see improvement in both models because the constant
 variance is better than it was in the OLS model. Normality has also
 improved and there is less error in the residuals.
 
-1.  Using the optimal lambda (bestlam) for both ridge and Lasso
+G.  Using the optimal lambda (bestlam) for both ridge and Lasso
     regression find the mean RMSEP for the test set. How do the mean
     RMSEP compare for the OLS, ridge, and Lasso regression models?
     Discuss. for OLS
@@ -382,7 +382,7 @@ shrinkage. The coefficients that were not useful were dropped out hence
 the better RMSE. Ridge performed better than OLS but that was to be
 expected since the initial OLS model had no shrinkage applied to it.
 
-1.  Use Monte Carlo Split-Sample Cross-Validation to estimate the mean
+H.  Use Monte Carlo Split-Sample Cross-Validation to estimate the mean
     RMSEP for the OLS, Ridge, and Lasso regressions above. Which model
     has best predictive performance?
 
@@ -556,7 +556,7 @@ lasso.results = glmnet.ssmc(X,y,M=1000,alpha=1,lambda=bestlam.lasso)
 
 INSIGHT: My lasso model has the best predictive performance
 
-1.  Repeat (a) – (h) using the College4 data frame with logApps as the
+I.  Repeat (a) – (h) using the College4 data frame with logApps as the
     response.
 
 ``` r
@@ -1105,7 +1105,7 @@ str(Lu2004)
     ##  $ X32813_s_at               : num  5.89 5.96 5.52 5.72 5.88 ...
     ##   [list output truncated]
 
-1.  Generate a sequence of ridge and Lasso regression models using the
+A.  Generate a sequence of ridge and Lasso regression models using the
     same grid values used in Problem 1. Create two plots showing the
     coefficient shrinkage with different x-axes for both ridge and Lasso
     regressions as in part (c) for Problem 1. Briefly discuss these
@@ -1159,7 +1159,7 @@ plot(lasso.mod,xvar= "lambda")
 SUMMARY: Using Lasso, most of the coefficients are being shrunk to zero
 when Log lambda is between 3 to 25.
 
-1.  Find the optimal for ridge and Lasso regression using the cv.glmnet
+B.  Find the optimal for ridge and Lasso regression using the cv.glmnet
     function. Also show plots of the cross-validation results for both
     methods. Discuss.
 
@@ -1209,7 +1209,7 @@ bestlam2
 SUMMARY: the best log lambda for the lasso model is between -2 to 0.02.
 this gives the best lambda as 0.196
 
-1.  ) Fit the optimal ridge and Lasso regression models and construct
+C.  ) Fit the optimal ridge and Lasso regression models and construct
     plots of the predicted ages (y ̂) vs. actual age (y). Also find the
     correlation between y & y ̂ and the correlation squared. Note the
     correlation between y & y ̂ squared is the R-square for the model.
@@ -1254,7 +1254,7 @@ SUMMARY: The lasso model has a rsqrd that’s slightly higher than the
 ridge. There is not big difference between them, but Lasso seems to be
 the best model
 
-1.  Using the better of the two models as determined from part (c),
+D.  Using the better of the two models as determined from part (c),
     examine and interpret the estimated coefficients. If the researchers
     ask you “which genes are most related or useful in determining the
     age of the subject?”, what would you tell them, i.e. give a list of
@@ -1675,7 +1675,7 @@ cbind(coef(ridge.best1), coef(lasso.best2))
 # to see the important variables and how they have been shrunk 
 ```
 
-1.  Use Monte Carlo cross-validation estimate the prediction accuracies
+E.  Use Monte Carlo cross-validation estimate the prediction accuracies
     for both ridge and Lasso regression for these data. (Use p = .75 and
     B = 1000.)
 
@@ -1771,7 +1771,7 @@ lasso.results = glmnet.ssmc(X,y,M=1000,alpha=1,lambda=bestlam.lasso)
 
     ## RMSEP = 15.26172   MAEP= 12.80444   MAPEP= 0.2365689
 
-1.  BONUS: Fit an Elastic Net to these data, fine tune it, and compare
+F. Fit an Elastic Net to these data, fine tune it, and compare
     the predictive performance to ridge and LASSO. (10 pts.)
 
 ``` r
