@@ -1,5 +1,6 @@
 # Ridge-Lasso-and-Elastic-Net-Regression
 FINDING THE NUMBER OF APPLICATIONS RECEIVED BY COLLEGES
+The college data is in ISLR library
 
 QUESTION 1. library needed
 
